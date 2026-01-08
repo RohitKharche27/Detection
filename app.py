@@ -1,4 +1,5 @@
 import streamlit as st
+from ultralytics import YOLO
 from PIL import Image
 import numpy as np
 
@@ -15,8 +16,7 @@ st.caption("Reliable & stable Streamlit deployment")
 # -------------------- LOAD MODEL --------------------
 @st.cache_resource
 def load_model():
-    import ultralytics  # ✅ lazy import
-    return ultralytics.YOLO("yolov8n.pt")
+    return YOLO("yolov8n.pt")
 
 model = load_model()
 
@@ -50,11 +50,10 @@ if uploaded_file:
             verbose=False
         )
 
-        annotated_img = results[0].plot()  # ✅ already RGB-safe
+        annotated_img = results[0].plot()  # ✅ no cv2 needed
 
     st.image(annotated_img, use_container_width=True)
 
-    # Detection summary
     boxes = results[0].boxes
     count = 0 if boxes is None else len(boxes)
 

@@ -2,6 +2,7 @@ import streamlit as st
 from ultralytics import YOLO
 from PIL import Image
 import numpy as np
+from collections import Counter
 
 # -------------------- PAGE CONFIG --------------------
 st.set_page_config(
@@ -10,18 +11,16 @@ st.set_page_config(
     layout="wide"
 )
 
-# -------------------- ULTRA ATTRACTIVE CSS --------------------
+# -------------------- ATTRACTIVE CSS --------------------
 st.markdown("""
 <style>
-
-/* Background */
 .stApp {
     background: radial-gradient(circle at top, #1e293b, #020617);
     color: #f8fafc;
     font-family: 'Poppins', sans-serif;
 }
 
-/* Header card */
+/* Header */
 .header-card {
     background: linear-gradient(135deg, rgba(59,130,246,0.25), rgba(14,165,233,0.15));
     padding: 35px;
@@ -32,8 +31,6 @@ st.markdown("""
     border: 1px solid rgba(255,255,255,0.1);
     margin-bottom: 40px;
 }
-
-/* Title */
 .header-card h1 {
     font-size: 3.2rem;
     font-weight: 800;
@@ -41,15 +38,12 @@ st.markdown("""
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
-
-/* Subtitle */
 .header-card p {
     font-size: 1.2rem;
     color: #cbd5f5;
-    margin-top: 10px;
 }
 
-/* Glass card */
+/* Glass cards */
 .glass {
     background: rgba(255,255,255,0.08);
     border-radius: 22px;
@@ -66,12 +60,7 @@ section[data-testid="stSidebar"] {
     border-right: 1px solid rgba(255,255,255,0.1);
 }
 
-/* Slider */
-.stSlider > div {
-    padding: 10px 0;
-}
-
-/* Success badge */
+/* Badge */
 .badge {
     display: inline-block;
     background: linear-gradient(90deg, #22c55e, #4ade80);
@@ -80,6 +69,7 @@ section[data-testid="stSidebar"] {
     border-radius: 999px;
     font-weight: 700;
     font-size: 0.9rem;
+    margin-top: 10px;
 }
 
 /* Class pills */
@@ -89,7 +79,7 @@ section[data-testid="stSidebar"] {
     color: #e0f2fe;
     padding: 6px 14px;
     border-radius: 999px;
-    margin: 5px 5px 0 0;
+    margin: 6px 6px 0 0;
     font-size: 0.85rem;
 }
 
@@ -100,7 +90,6 @@ hr {
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
     margin: 40px 0;
 }
-
 </style>
 """, unsafe_allow_html=True)
 
@@ -108,7 +97,7 @@ hr {
 st.markdown("""
 <div class="header-card">
     <h1>🚀 AI Object Detection</h1>
-    <p>Next-generation multi-image detection using YOLOv8 & Streamlit</p>
+    <p>Multi-image object detection using YOLOv8 & Streamlit</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -127,24 +116,30 @@ st.sidebar.markdown("""
 ---
 **🧠 Model:** YOLOv8 Nano  
 **⚡ Speed:** Fast  
-**🎯 Use Case:** Object Detection  
+**🎯 Task:** Object Detection  
 """)
 
-# -------------------- UPLOAD --------------------
+# -------------------- IMAGE UPLOAD --------------------
 uploaded_files = st.file_uploader(
     "📤 Upload images (multiple allowed)",
     type=["jpg", "jpeg", "png", "webp"],
     accept_multiple_files=True
 )
 
-# -------------------- PROCESS --------------------
+# -------------------- PROCESS IMAGES --------------------
 if uploaded_files:
-    st.markdown(f"<div class='badge'>📸 {len(uploaded_files)} image(s) uploaded</div>", unsafe_allow_html=True)
+    st.markdown(
+        f"<div class='badge'>📸 {len(uploaded_files)} image(s) uploaded</div>",
+        unsafe_allow_html=True
+    )
 
-    for i, file in enumerate(uploaded_files, 1):
+    for idx, file in enumerate(uploaded_files, start=1):
         st.markdown("<hr>", unsafe_allow_html=True)
 
-        st.markdown(f"<div class='glass'><h3>🖼 Image {i}: {file.name}</h3></div>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div class='glass'><h3>🖼 Image {idx}: {file.name}</h3></div>",
+            unsafe_allow_html=True
+        )
 
         image = Image.open(file).convert("RGB")
         img_np = np.array(image)
@@ -152,7 +147,7 @@ if uploaded_files:
         col1, col2 = st.columns(2)
 
         with col1:
-            st.markdown("<div class='glass'><h4>Original</h4></div>", unsafe_allow_html=True)
+            st.markdown("<div class='glass'><h4>Original Image</h4></div>", unsafe_allow_html=True)
             st.image(image, use_container_width=True)
 
         with col2:
@@ -161,18 +156,26 @@ if uploaded_files:
             annotated = results[0].plot()
             st.image(annotated, use_container_width=True)
 
+        # -------- Summary --------
         boxes = results[0].boxes
         count = 0 if boxes is None else len(boxes)
 
-        st.markdown(f"<div class='badge'>✅ Objects detected: {count}</div>", unsafe_allow_html=True)
+        st.markdown(
+            f"<div class='badge'>✅ Objects detected: {count}</div>",
+            unsafe_allow_html=True
+        )
 
         if count > 0:
             class_ids = boxes.cls.cpu().numpy()
             class_names = [results[0].names[int(i)] for i in class_ids]
+            class_counts = Counter(class_names)
 
             st.markdown("<br>", unsafe_allow_html=True)
-            for name in class_names:
-                st.markdown(f"<span class='pill'>{name}</span>", unsafe_allow_html=True)
+            for cls, qty in class_counts.items():
+                st.markdown(
+                    f"<span class='pill'>{cls} × {qty}</span>",
+                    unsafe_allow_html=True
+                )
 
 else:
     st.markdown("""
